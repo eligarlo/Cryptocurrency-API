@@ -1,3 +1,5 @@
+var coinsToChart = [];
+
 $(document).ready(function () {
 
     let getCryptoArray = localStorage.getItem('coins');
@@ -13,9 +15,10 @@ $(document).ready(function () {
                 switch (href) {
                     case 'home':
                         getCryptoCurrencies('mainContent');
+                        coinsToChart = [];
                         break;
                     case 'reports':
-                        console.log('adsfg');
+                        reports();
                         break;
                     case 'about':
                         break;
@@ -91,18 +94,18 @@ $(document).ready(function () {
 
 function templateHome(crypto) {
     return `
-        <div class="col mb-2">
+        <div class="pl-sm-0 col mb-2 mx-auto">
             <div class="card" style="width: 18rem;">
                 <div class="card-body">
                     <div class="row">
                         <div class="col-sm-5">
                             <h5 class="card-title">${crypto.symbol.toUpperCase()}</h5>
                         </div>
-                        <div class="col-sm-4 ml-auto">
-                            <button type="button" class="btn btn-sm btn-toggle" data-toggle="button" aria-pressed="false"
-                                autocomplete="off">
-                                <div class="handle"></div>
-                            </button>
+                        <div class="offset-3 col-sm-4">
+                            <label class="switch">
+                                <input id="${crypto.symbol}" type="checkbox" onclick="addToChart('${crypto.symbol}')">
+                                <span class="slider round"></span>
+                            </label>
                         </div>
                     </div>    
                     <p class="card-text">${crypto.name}</p>
@@ -162,5 +165,170 @@ function Coin(img, usd, eur, ils) {
     this.euro = eur;
     this.nis = ils;
 }
-// https://api.coingecko.com/api/v3/coins/list
-// https://api.coingecko.com/api/v3/coins/{id}
+
+function addToChart(id) {
+    let selectedCoin = $(`#${id}`).prop('checked');
+    if (coinsToChart.length === 5) {
+        let inChart = true;
+        for (let i = 0; i < coinsToChart.length; i++) {
+            if (coinsToChart[i] === id.toUpperCase()) {
+                coinsToChart.splice(i, 1);
+                inChart = false;
+            } else {
+                $('#alert-chart-message').removeClass('d-block').addClass('d-none');
+                $(`#${id}`).prop('checked', false);
+            }
+        }
+        if (inChart) {
+            $('#alert-chart-message').removeClass('d-none').addClass('d-block');
+            $(`#${id}`).prop('checked', false);
+        }
+    } else if (selectedCoin === true) {
+        coinsToChart.push(id.toUpperCase());
+    }
+    else {
+        for (let i = 0; i < coinsToChart.length; i++) {
+            if (coinsToChart[i] === id.toUpperCase()) {
+                coinsToChart.splice(i, 1);
+            }
+        }
+    }
+}
+
+function reports() {
+    if (coinsToChart.length === 0) {
+        $('#alertChart').removeClass('d-none').addClass('d-block');
+    } else {
+        const coins = [
+            dataCoin1 = [],
+            dataCoin2 = [],
+            dataCoin3 = [],
+            dataCoin4 = [],
+            dataCoin5 = [],
+        ]
+        let chart = new CanvasJS.Chart("chart", {
+            animationEnabled: true,
+            title: {
+                text: 'Live Chart'
+            },
+            asisX: {
+                title: 'Two seconds update chart!'
+            },
+            axisY: {
+                prefix: '$',
+                includeZero: false
+            },
+            tooltip: {
+                shared: true
+            },
+            legend: {
+                cursor: "pointer",
+                verticalAlign: "top",
+                fontSize: 13,
+                fontColor: "dimGrey",
+                itemclick: toggleDataSeries
+            },
+            data: []
+        });
+
+        for (let i = 0; i < coinsToChart.length; i++) {
+            chart.options.data.push({
+                type: 'stackedArea',
+                showInLegend: true,
+                toolTipContent: "<span style=\"color:#4F81BC\"><strong>{name}: </strong></span> {y}",
+                xValueType: 'dateTime',
+                yValueFormatString: "$####.0000",
+                name: coinsToChart[i],
+                dataPoints: coins[i]
+            })
+        }
+
+        function toggleDataSeries(e) {
+            if (typeof (e.dataSeries.visible) === "undefined" || e.dataSeries.visible) {
+                e.dataSeries.visible = false;
+            }
+            else {
+                e.dataSeries.visible = true;
+            }
+            chart.render();
+        }
+
+        $.ajax(`https://min-api.cryptocompare.com/data/pricemulti?fsyms=${coinsToChart}&tsyms=USD`)
+            .done((data) => {
+                price(data);
+            });
+
+        function price(data) {
+            var values = [
+                yValue1 = 0,
+                yValue2 = 0,
+                yValue3 = 0,
+                yValue4 = 0,
+                yValue5 = 0,]
+            for (let i = 0; i < coinsToChart.length; i++) {
+                if (data[`${coinsToChart[i]}`] !== undefined) {
+                    var price = data[`${coinsToChart[i]}`]['USD'];
+                } else {
+                    var price = 0;
+                }
+                values[i] = price;
+            }
+        }
+        var time = new Date;
+        time.getHours();
+        time.getMinutes();
+        time.getSeconds();
+        time.getMilliseconds();
+        var yValues = [
+            yValue1 = 0,
+            yValue2 = 0,
+            yValue3 = 0,
+            yValue4 = 0,
+            yValue5 = 0,
+        ]
+
+        function updateChart(count) {
+            count = count || 1;
+            for (var i = 0; i < count; i++) {
+                time.setTime(time.getTime() + 2000);
+                $.ajax(`https://min-api.cryptocompare.com/data/pricemulti?fsyms=${coinsToChart}&tsyms=USD`)
+                    .done((data) => {
+                        yPrice(data);
+                    });
+                function yPrice(data) {
+                    for (let i = 0; i < coinsToChart.length; i++) {
+                        if (data[`${coinsToChart[i]}`] !== undefined) {
+                            var price = data[`${coinsToChart[i]}`]['USD'];
+                        } else {
+                            var price = 0;
+                        }
+                        yValues[i] = price;
+                    }
+                    dataCoin1.push({
+                        x: time.getTime(),
+                        y: yValues[0]
+                    });
+                    dataCoin2.push({
+                        x: time.getTime(),
+                        y: yValues[1]
+                    });
+                    dataCoin3.push({
+                        x: time.getTime(),
+                        y: yValues[2]
+                    });
+                    dataCoin4.push({
+                        x: time.getTime(),
+                        y: yValues[3]
+                    });
+                    dataCoin5.push({
+                        x: time.getTime(),
+                        y: yValues[4]
+                    });
+                    chart.render();
+                }
+            }
+        }
+        updateChart(0);
+        setInterval(function () { updateChart() }, 2000);
+    }
+}
